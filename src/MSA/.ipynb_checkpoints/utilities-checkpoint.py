@@ -57,7 +57,7 @@ class Person:
             date_previous = date
         
         # The figure and the axes.
-        fig, ax = plt.subplots(figsize=(10, 2), layout="constrained")
+        fig, ax = plt.subplots(figsize=(8.8, 4), layout="constrained")
         ax.set(title=self.name + "_Timeline")
         
         # The vertical stems.
