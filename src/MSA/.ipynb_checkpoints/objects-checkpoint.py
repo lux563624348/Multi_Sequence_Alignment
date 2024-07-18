@@ -3,7 +3,7 @@ import pandas as pd
 from datetime import datetime
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
-
+import json
 
 class Person:
     """Represents a person with attributes like name, age, etc."""
@@ -24,12 +24,19 @@ class Person:
         self.story = story
         self.events = event
 
-    def set_story(self, df_events, col_events, col_dates):
+    def set_story_df(self, df_events, col_events, col_dates):
          """
          Take input from df one column for events, another for date.
          """
          self.events = ''.join(df_events.loc[:, col_events])
          self.dates = df_events.loc[:, col_dates].values
+
+    def set_story(self, events, dates):
+         """
+         Take input from df one for events, another for date.
+         """
+         self.events = events
+         self.dates = dates
      
     def introduce(self):
         """Returns a string introducing the person."""
@@ -120,7 +127,16 @@ class SubstitutionMatrix:
     def iniate_scores(self, match_score, unmatch_score):
         self.matrix += np.diag(np.full(self.num_events, match_score - unmatch_score))
         self.matrix += np.full((self.num_events, self.num_events), unmatch_score)
-        
+
+    def initate_matrix(self, seq1, seq2):
+        unique_index = sorted(list(set(seq1+seq2)))
+        self.num_events = len(unique_index) + 2
+        self.indexs = ["#"]+ unique_index + ["*"]  #
+        self.matrix = np.full((self.num_events, self.num_events), 0)
+        ## score for set_scores(match, mismatch) 
+        self.iniate_scores(0, 1)
+        self.df_matrix = pd.DataFrame(data = self.matrix, index = self.indexs, columns = self.indexs)
+    
     def set_score(self, event1, event2, score):
         self.df_matrix.loc[event1, event2] = score
     
@@ -136,6 +152,11 @@ class SubstitutionMatrix:
     
     def save_matrix_txt(self, path_out):
         np.savetxt(path_out, self.matrix, fmt = '%.1f')
+
+    def save_matrix_json(self, path_out):
+        # Save the dictionary to a JSON file
+        with open(path_out+".json", "w") as f:
+            json.dump(self.df_matrix.to_dict(), f)
     
     def save_df_matrix_txt(self, path_out):
         self.df_matrix.to_csv(path_out, sep='\t')
@@ -145,7 +166,18 @@ class SubstitutionMatrix:
         Returns a string representation of the substitution matrix.
         """
         return self.df_matrix
-    
+
+def Initate_Submatrix(seq1, seq2):
+    unique_index = sorted(list(set(seq1+seq2)))
+    #print (unique_index)
+    SubMatrix = SubstitutionMatrix(len(unique_index))
+    SubMatrix.set_index(unique_index)
+    ## score for set_scores(match, mismatch) 
+    ## set_scores(0, 1) means Levenshtein Distance
+    SubMatrix.iniate_scores(0, 1)
+    SubMatrix.to_df()
+    return SubMatrix
+
 class ClassName:
     """Docstring explaining the class purpose"""
     
