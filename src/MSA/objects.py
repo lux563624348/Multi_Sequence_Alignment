@@ -134,7 +134,7 @@ class SubstitutionMatrix:
         self.indexs = ["#"]+ unique_index + ["*"]  #
         self.matrix = np.full((self.num_events, self.num_events), 0)
         ## score for set_scores(match, mismatch) 
-        self.iniate_scores(0, 1)
+        self.iniate_scores(-1, 1)
         self.df_matrix = pd.DataFrame(data = self.matrix, index = self.indexs, columns = self.indexs)
     
     def set_score(self, event1, event2, score):

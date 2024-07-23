@@ -61,10 +61,6 @@ def Levenshtein_Distance_with_Transposition_Date(seq1, seq2, dates1, dates2, dic
                   transposition_cost = dp[i-1][j-1] + cost
                   dp[i][j] = min(dp[i][j], transposition_cost)
 
-      #print (dp)
-      #break
-    #break
-  # Return the distance and matrix (optional)
   return dp[m - 1][n - 1], dp
 
 def Normalize_Levenshtein_Distance_Score(seq1, seq2, dates1, dates2, dict_sub_matrix, max_transposition_date):
@@ -103,13 +99,8 @@ def Main_Compute_Similarity_For_Pair_and_Save(filename, pair_name, df_p1, df_p2,
     
     return None
 
-def initializer(l, f):
-    global lock, filename
-    lock = l
-    filename = f
-
 def main():
-    if len(sys.argv) != 5:
+    if len(sys.argv) != 6:
         #print (sys.argv)
         print("Usage: python MSA.py path_data, path_sub_matrix, max_transposition_date, core")
         sys.exit(1)
@@ -118,10 +109,11 @@ def main():
     path_sub_matrix = sys.argv[2]
     max_transposition_date = sys.argv[3]
     num_threads = int(sys.argv[4])
+    path_out = sys.argv[5]
     
     Path_data = "/home/xli_p14/github/sentenceTransformers/demo_Input_File.tsv"
     Path_matrix = "/home/xli_p14/github/sentenceTransformers/test_submatrix.txt"
-    max_transposition_date = 5
+    max_transposition_date = 10
     
     col_ID = 'ID'
     col_time = 'date'
@@ -141,13 +133,10 @@ def main():
     ## If threads of server is not enough to run chrs at the same time. Choose CPU core as max.
 
     filename = "test_output.txt"
+    
     #lock = multiprocessing.Lock()
     #pool = multiprocessing.Pool(N_thread, initializer=initializer, initargs=(lock, filename))
-    
-    pool = multiprocessing.Pool(N_thread)
-    
-# Initialize the pool with the lock and filename
-    
+    pool = multiprocessing.Pool(N_thread) 
     print ('Threads: '+ str(N_thread))
     
     for idx in range(len(IDs)):
@@ -157,8 +146,7 @@ def main():
             df_p2 = df_groups.get_group(IDs[idj]).loc[:, [col_time, col_seq]]
             pair_name = IDs[idx] + "_" + IDs[idj]
             pool.apply_async(Main_Compute_Similarity_For_Pair_and_Save, args=(filename, pair_name, df_p1, df_p2, col_seq, col_time, dict_matrix, max_transposition_date))
-            #Similarity = Main_Compute_Similarity_For_Pair(pair_name, df_p1, df_p2, col_seq, col_time, dict_matrix, max_transposition_date)
-            #similarity_matrix.append([pair_name, Similarity])
+
     pool.close()
     pool.join()
     print('All subprocesses done.')
