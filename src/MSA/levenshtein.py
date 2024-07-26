@@ -81,20 +81,18 @@ def Levenshtein_Distance_with_Transposition_Date(seq1, seq2, dates1, dates2, dic
           for idx_seq1  in range(1, m, 1):
               date_diff1 = abs((dates1[idx_seq1] - dates2[j]).days)
               if (date_diff1 < max_transposition_date):
-                  cost = (0 if seq1[idx_seq1] == seq2[j] else dict_sub_matrix[seq1[idx_seq1]][seq2[j]])
+                  sub_cost = dict_sub_matrix[seq1[idx_seq1]][seq2[j]] ## Vtns = Vmtc * w3  ([0,1]) w3 = 0.5
+                  cost = (0.5*sub_cost if seq1[idx_seq1] == seq2[j] else sub_cost)
                   transposition_cost = dp[i-1][j-1] + cost
                   dp[i][j] = min(dp[i][j], transposition_cost)
           for idx_seq2  in range(1, n, 1):
               date_diff2 = abs((dates1[i] - dates2[idx_seq2]).days)
               if (date_diff2 < max_transposition_date):
-                  cost = (0 if seq1[i] == seq2[idx_seq2] else dict_sub_matrix[seq1[i]][seq2[idx_seq2]])
+                  sub_cost = dict_sub_matrix[seq1[i]][seq2[idx_seq2]] ## Vtns = Vmtc * w3  ([0,1]) w3 = 0.5
+                  cost = (0.5*sub_cost if seq1[idx_seq1] == seq2[j] else sub_cost)                  
                   transposition_cost = dp[i-1][j-1] + cost
                   dp[i][j] = min(dp[i][j], transposition_cost)
 
-      #print (dp)
-      #break
-    #break
-  # Return the distance and matrix (optional)
   return dp[m - 1][n - 1], dp
 
 def Normalize_Levenshtein_Distance_Score(seq1, seq2, dates1, dates2, dict_sub_matrix, max_transposition_date):
