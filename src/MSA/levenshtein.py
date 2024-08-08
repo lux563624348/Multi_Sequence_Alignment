@@ -9,8 +9,8 @@ def levenshtein_distance(seq1, seq2, dict_sub_matrix):
     Returns:
     The Levenshtein distance between the two sequences.
     """
-    seq1 = "#"+seq1
-    seq2 = "#"+seq2
+    seq1 = ["#"] +  [x for x in seq1]
+    seq2 = ["#"] +  [x for x in seq2]
     m = len(seq1)
     n = len(seq2)
     # Ref: https://medium.com/@ethannam/understanding-the-levenshtein-distance-equation-for-beginners-c4285a5604f0
@@ -50,8 +50,8 @@ def Levenshtein_Distance_with_Transposition_Date(seq1, seq2, dates1, dates2, dic
   Returns:
     The Levenshtein distance between the two sequences.
   """
-  seq1 = "#"+''.join(seq1)
-  seq2 = "#"+''.join(seq2)
+  seq1 = ["#"] +  [x for x in seq1]
+  seq2 = ["#"] +  [x for x in seq2]
   dates1 = ["None"] + [datetime.strptime(x, date_format) for x in dates1]
   dates2 = ["None"] + [datetime.strptime(x, date_format) for x in dates2]
 

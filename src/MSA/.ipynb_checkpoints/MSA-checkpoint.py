@@ -3,6 +3,10 @@ from datetime import datetime, date
 import sys, time, multiprocessing
 import pandas as pd
 
+def Categorize_DX_code(_dx_code):
+    cat_dx = _dx_code[0]
+    return cat_dx
+
 def date_to_daystamp(date_obj):
   datetime_obj = datetime(year=date_obj.year, month=date_obj.month, day=date_obj.day)
   timestamp = datetime_obj.timestamp()/(24*60*60) # in days
@@ -18,13 +22,11 @@ def Levenshtein_Distance_with_Transposition_Date(seq1, seq2, dates1, dates2, dic
   Returns:
     The Levenshtein distance between the two sequences.
   """
-  seq1 = "#"+''.join(seq1)
-  seq2 = "#"+''.join(seq2)
-  #dates1 = np.insert(dates1, 0,  "None")
-  #dates2 = np.insert(dates2, 0,  "None")  # Adding None to align dates with the prefixed '#'
-  dates1 = ["None"] + [x for x in dates1]
-  dates2 = ["None"] + [x for x in dates2]
-  #print (dates1, dates2)
+  seq1 = ["#"] +  [x for x in seq1]
+  seq2 = ["#"] +  [x for x in seq2]
+  dates1 = ["None"] + [datetime.strptime(x, date_format) for x in dates1]
+  dates2 = ["None"] + [datetime.strptime(x, date_format) for x in dates2]
+
   m = len(seq1)
   n = len(seq2)
   # Create a distance matrix
@@ -37,27 +39,32 @@ def Levenshtein_Distance_with_Transposition_Date(seq1, seq2, dates1, dates2, dic
     dp[0][j] = j
 
   # Fill the DP table
+  # for rareness-weight
+  w1,w2,w3 = -0.5, 0.75, 0.5
+    
   for i in range(1, m):
     for j in range(1, n):
       # Standard costs
       insertion_cost = dp[i-1][j] + dict_sub_matrix[seq1[i-1]][seq2[0]]  # (letter -> # )
       deletion_cost = dp[i][j-1] +  dict_sub_matrix[seq1[0]][seq2[j-1]]  # ( # -> letter)
       # Substitution cost
-      cost = (0 if seq1[i] == seq2[j] else dict_sub_matrix[seq1[i]][seq2[j]])
+      cost = dict_sub_matrix[seq1[i]][seq2[j]]
       substitution_cost = dp[i-1][j-1] + cost
       dp[i][j] = min(insertion_cost, deletion_cost, substitution_cost)
       # Handle transpositions with date constraint
       if ((i > 0) & (j > 0)):
           for idx_seq1  in range(1, m, 1):
-              date_diff1 = abs(date_to_daystamp(dates1[idx_seq1]) - date_to_daystamp(dates2[j]))
+              date_diff1 = abs((dates1[idx_seq1] - dates2[j]).days)
               if (date_diff1 < max_transposition_date):
-                  cost = (0 if seq1[idx_seq1] == seq2[j] else dict_sub_matrix[seq1[idx_seq1]][seq2[j]])
+                  sub_cost = dict_sub_matrix[seq1[idx_seq1]][seq2[j]] ## Vtns = Vmtc * w3  ([0,1]) w3 = 0.5
+                  cost = (w3*sub_cost if seq1[idx_seq1] == seq2[j] else sub_cost)
                   transposition_cost = dp[i-1][j-1] + cost
                   dp[i][j] = min(dp[i][j], transposition_cost)
           for idx_seq2  in range(1, n, 1):
-              date_diff2 = abs(date_to_daystamp(dates1[i]) - date_to_daystamp(dates2[idx_seq2]))
+              date_diff2 = abs((dates1[i] - dates2[idx_seq2]).days)
               if (date_diff2 < max_transposition_date):
-                  cost = (0 if seq1[i] == seq2[idx_seq2] else dict_sub_matrix[seq1[i]][seq2[idx_seq2]])
+                  sub_cost = dict_sub_matrix[seq1[i]][seq2[idx_seq2]] ## Vtns = Vmtc * w3  ([0,1]) w3 = 0.5
+                  cost = (w3*sub_cost if seq1[idx_seq1] == seq2[j] else sub_cost)                  
                   transposition_cost = dp[i-1][j-1] + cost
                   dp[i][j] = min(dp[i][j], transposition_cost)
 
@@ -85,10 +92,12 @@ def Main_Compute_Similarity_For_Pair_and_Save(filename, pair_name, df_p1, df_p2,
     df_seq1 = df_p1.sort_values(col_time)
     df_seq2 = df_p2.sort_values(col_time)
 
-    seq1 = ''.join(df_seq1.loc[:, col_seq])
-    seq2 = ''.join(df_seq2.loc[:, col_seq])
-    date1 = df_seq1.loc[:, col_time].values
-    date2 = df_seq2.loc[:, col_time].values
+    seq1 = ["#"] +  [x for x in df_seq1.loc[:, col_seq]]
+    seq2 = ["#"] +  [x for x in df_seq2.loc[:, col_seq]]
+
+    date_format = "%Y-%m-%d"
+    date1 = [datetime.strptime(x, date_format).date() for x in df_seq1.loc[:, col_time].values]
+    date2 = [datetime.strptime(x, date_format).date() for x in df_seq2.loc[:, col_time].values]
 
     dict_sub_matrix = dict_sub_matrix
     similarity = Normalize_Levenshtein_Distance_Score(seq1, seq2, date1, date2, dict_sub_matrix, max_transposition_date)

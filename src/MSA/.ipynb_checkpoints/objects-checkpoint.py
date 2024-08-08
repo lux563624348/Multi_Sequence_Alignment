@@ -28,8 +28,8 @@ class Person:
          """
          Take input from df one column for events, another for date.
          """
-         self.events = ''.join(df_events.loc[:, col_events])
-         self.dates = df_events.loc[:, col_dates].values
+         self.events = [x for x in df_events.loc[:, col_events]
+         self.dates = [x for x in df_events.loc[:, col_dates]
 
     def set_story(self, events, dates):
          """
