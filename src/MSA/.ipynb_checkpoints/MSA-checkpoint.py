@@ -70,9 +70,99 @@ def Levenshtein_Distance_with_Transposition_Date(seq1, seq2, dates1, dates2, dic
 
   return dp[m - 1][n - 1], dp
 
+def Levenshtein_Distance_with_Transposition_Date_Final(seq1, seq2, dates1, dates2, dict_sub_matrix, max_transposition_date):
+    """
+    Calculates the Levenshtein distance between two sequences, considering transpositions.
+    Args:
+    seq1: The first sequence.
+    seq2: The second sequence.
+    dict_sub_matrix: Pandas DataFrame containing substitution distance.
+    Returns:
+    The Levenshtein distance between the two sequences.
+    """
+    seq1 = ["#"] +  [x for x in seq1]
+    seq2 = ["#"] +  [x for x in seq2]
+    dates1 = ["None"] + [x for x in dates1]
+    dates2 = ["None"] + [x for x in dates2]
+    
+    sizerow = len(seq1)
+    sizecol = len(seq2)
+    # Create a distance matrix
+    dp = [[0 for col in range(sizecol)] for row in range(sizerow)]
+    w1,w2,w3 = -0.5, 0.75, 0.5
+    
+    for i in range(1, sizerow):
+        for j in range(1, sizecol):
+            # Standard costs
+            Vmtc_row = dict_sub_matrix[seq1[i]][seq1[i]]
+            Vmtc_col = dict_sub_matrix[seq2[j]][seq2[j]]
+            insertion_cost = dp[i][j-1] + w1*w2*min(Vmtc_row, Vmtc_col)  # ( # -> letter)
+            deletion_cost = dp[i-1][j] + w1*w2*min(Vmtc_row, Vmtc_col)  # (letter -> # )
+            # Substitution cost
+            min_dp =  dp[i-1][j-1] #min(dp[i][j-1], dp[i-1][j-1], dp[i-1][j])
+            if (seq1[i] != seq2[j]):
+                sub_cost = min_dp + w1*min(Vmtc_row, Vmtc_col) # sub
+            if (seq1[i] == seq2[j]): ## sub or tns or mtc
+                if (abs((dates1[i] - dates2[j]).days) > max_transposition_date):
+                    ## sub: same sequence, but out of date.
+                    sub_cost = min_dp + w1*min(Vmtc_row, Vmtc_col)
+                else: ## within tns date,
+                    sub_cost = min_dp + min(Vmtc_row, Vmtc_col)
+                    if(i!=j):## tns
+                        sub_cost = min_dp + w3*min(Vmtc_row, Vmtc_col)
+            dp[i][j] = min(insertion_cost, deletion_cost, sub_cost)
+    return dp[sizerow - 1][sizecol - 1], dp
+
+def Levenshtein_Distance_with_Transposition_Date_Rareness(seq1, seq2, dates1, dates2, dict_pre_matrix, max_transposition_date):
+    """
+    Calculates the Levenshtein distance between two sequences, considering transpositions.
+    Args:
+    seq1: The first sequence.
+    seq2: The second sequence.
+    dict_sub_matrix: Pandas DataFrame containing substitution distance.
+    Returns:
+    The Levenshtein distance between the two sequences.
+    """
+    seq1 = ["#"] +  [x for x in seq1]
+    seq2 = ["#"] +  [x for x in seq2]
+    dates1 = ["None"] + [x for x in dates1]
+    dates2 = ["None"] + [x for x in dates2]
+    
+    sizerow = len(seq1)
+    sizecol = len(seq2)
+    # Create a distance matrix
+    dp = [[0 for col in range(sizecol)] for row in range(sizerow)]
+    w1, w2, w3 = -0.5, 0.75, 0.5
+    #in the manuscript, 𝑤1 = -0.5, 𝑤2 = 0.75, and 𝑤3 = 0.5
+    ## Vsub = Vmtc * w1, (w1<=0)
+    ## Vins = Vsub * w2 = Vmtc * w1*w2  ([0.5, 1])
+    ## Vtns = Vmtc * w3  ([0,1])
+    for i in range(1, sizerow):
+        for j in range(1, sizecol):
+            # Standard costs
+            Vmtc_row = dict_pre_matrix[seq1[i]]["Vmtc"]
+            Vmtc_col = dict_pre_matrix[seq2[j]]["Vmtc"]
+            insertion_cost = dp[i][j-1] + w1*w2*min(Vmtc_row, Vmtc_col)  # ( # -> letter)
+            deletion_cost = dp[i-1][j] + w1*w2*min(Vmtc_row, Vmtc_col)  # (letter -> # )
+            # Substitution cost
+            min_dp =  dp[i-1][j-1]
+            if (seq1[i] != seq2[j]):
+                sub_cost = min_dp + w1*min(Vmtc_row, Vmtc_col)  # sub
+            ## change sub_cost if same sequence
+            if (seq1[i] == seq2[j]): ## sub or tns or mtc
+                if (abs((dates1[i] - dates2[j]).days) > max_transposition_date):
+                    ## sub: same sequence, but out of date.
+                    sub_cost = min_dp + w1*min(Vmtc_row, Vmtc_col)
+                else: ## within tns date,
+                    sub_cost = min_dp + min(Vmtc_row, Vmtc_col)
+                    if(i!=j):## tns
+                        sub_cost = min_dp + w3*min(Vmtc_row, Vmtc_col)
+            dp[i][j] = min(insertion_cost, deletion_cost, sub_cost)
+    return dp[sizerow - 1][sizecol - 1], dp
+
 def Normalize_Levenshtein_Distance_Score(seq1, seq2, dates1, dates2, dict_sub_matrix, max_transposition_date):
     ''' 0~1'''
-    distance, matrix = Levenshtein_Distance_with_Transposition_Date(seq1, seq2, dates1, dates2, dict_sub_matrix, max_transposition_date)
+    distance, matrix = Levenshtein_Distance_with_Transposition_Date_Final(seq1, seq2, dates1, dates2, dict_sub_matrix, max_transposition_date)
     #print ("Leven_Distance", distance)
 
     seq1_match = [dict_sub_matrix[char][char] for char in seq1]
@@ -80,6 +170,24 @@ def Normalize_Levenshtein_Distance_Score(seq1, seq2, dates1, dates2, dict_sub_ma
 
     seq1_penal = [dict_sub_matrix[char]["#"] for char in seq1] ## (letter -> # ) deletion
     seq2_penal = [dict_sub_matrix[char]["#"] for char in seq2]
+
+    distance_max = max(sum(seq1_penal), sum(seq2_penal))
+    distance_min = min(sum(seq1_match[::-1]), sum(seq2_match[::-1]))
+    normalized_score = (distance - distance_min)/ (distance_max-distance_min)
+    if (distance_max == distance_min): normalized_score = 1
+    similarity_score = 1 - normalized_score
+    return similarity_score
+
+def Normalize_Levenshtein_Distance_Score_Rareness(seq1, seq2, dates1, dates2, dict_rare_matrix, max_transposition_date):
+    ''' 0~1'''
+    distance, matrix = Levenshtein_Distance_with_Transposition_Date_Rareness(seq1, seq2, dates1, dates2, dict_rare_matrix, max_transposition_date)
+    #print ("Leven_Distance", distance)
+
+    seq1_penal = [dict_rare_matrix[char]['Vins'] for char in seq1] #[dict_matrix[char]["#"] for char in seq1]
+    seq2_penal = [dict_rare_matrix[char]['Vins'] for char in seq2]# [dict_matrix[char]["#"] for char in seq2]
+    
+    seq1_match = [dict_rare_matrix[char]['Vmtc'] for char in seq1] #[dict_matrix[char][char] for char in seq1]
+    seq2_match = [dict_rare_matrix[char]['Vmtc'] for char in seq2]
 
     distance_max = max(sum(seq1_penal), sum(seq2_penal))
     distance_min = min(sum(seq1_match[::-1]), sum(seq2_match[::-1]))
@@ -99,8 +207,13 @@ def Main_Compute_Similarity_For_Pair_and_Save(filename, pair_name, df_p1, df_p2,
     date1 = [datetime.strptime(x, date_format).date() for x in df_seq1.loc[:, col_time].values]
     date2 = [datetime.strptime(x, date_format).date() for x in df_seq2.loc[:, col_time].values]
 
-    dict_sub_matrix = dict_sub_matrix
-    similarity = Normalize_Levenshtein_Distance_Score(seq1, seq2, date1, date2, dict_sub_matrix, max_transposition_date)
+    ## work with matrix directly 
+    #dict_sub_matrix = dict_sub_matrix
+    #similarity = Normalize_Levenshtein_Distance_Score(seq1, seq2, date1, date2, dict_sub_matrix, max_transposition_date)
+
+    ## work with rare rank directly
+    dict_rare_matrix = dict_sub_matrix 
+    similarity = Normalize_Levenshtein_Distance_Score_Rareness(seq1, seq2, date1, date2, dict_rare_matrix, max_transposition_date)
 
     with open(filename, 'a') as f:
         f.write(pair_name+'\t'+ str(similarity)+'\n')
@@ -122,6 +235,7 @@ def main():
     
     Path_data = "/home/xli_p14/github/sentenceTransformers/demo_Input_File.tsv"
     Path_matrix = "/home/xli_p14/github/sentenceTransformers/test_submatrix.txt"
+    Path_df_Rare = "/home/xli_p14/github/sentenceTransformers/test_submatrix.txt"
     max_transposition_date = 10
     
     col_ID = 'ID'
@@ -131,6 +245,8 @@ def main():
     df_tem = pd.read_csv(Path_data, sep='\t')
     df_tem.loc[:, 'date'] = pd.to_datetime(df_tem.loc[:, col_time])
     dict_matrix = pd.read_csv(Path_matrix, sep='\t', index_col=0).to_dict()
+    
+    #dict_matrix = pd.read_csv(Path_matrix, sep='\t', index_col=0).loc[:, ["Vmtc"]].to_dict('index')
     df_groups = df_tem.groupby(col_ID)
     IDs = list(df_groups.groups.keys())
     
