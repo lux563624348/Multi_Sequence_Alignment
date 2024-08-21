@@ -246,7 +246,7 @@ def main():
     df_tem.loc[:, 'date'] = pd.to_datetime(df_tem.loc[:, col_time])
     dict_matrix = pd.read_csv(Path_matrix, sep='\t', index_col=0).to_dict()
     
-    #dict_matrix = pd.read_csv(Path_matrix, sep='\t', index_col=0).loc[:, ["Vmtc"]].to_dict('index')
+    #dict_matrix = pd.read_csv(Path_matrix, sep='\t', index_col=0).to_dict('index')
     df_groups = df_tem.groupby(col_ID)
     IDs = list(df_groups.groups.keys())
     
