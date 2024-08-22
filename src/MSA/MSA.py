@@ -12,64 +12,6 @@ def date_to_daystamp(date_obj):
   timestamp = datetime_obj.timestamp()/(24*60*60) # in days
   return timestamp
 
-def Levenshtein_Distance_with_Transposition_Date(seq1, seq2, dates1, dates2, dict_sub_matrix, max_transposition_date):
-  """
-  Calculates the Levenshtein distance between two sequences, considering transpositions.
-  Args:
-    seq1: The first sequence.
-    seq2: The second sequence.
-    dict_sub_matrix: Pandas DataFrame containing substitution distance.
-  Returns:
-    The Levenshtein distance between the two sequences.
-  """
-  seq1 = ["#"] +  [x for x in seq1]
-  seq2 = ["#"] +  [x for x in seq2]
-  dates1 = ["None"] + [datetime.strptime(x, date_format) for x in dates1]
-  dates2 = ["None"] + [datetime.strptime(x, date_format) for x in dates2]
-
-  m = len(seq1)
-  n = len(seq2)
-  # Create a distance matrix
-  #dp = np.full((m, n), 0)  # Initialize with infinity to handle transpositions
-  dp = [[0 for col in range(n)] for row in range(m)]
-  # Initialize the first row and column
-  for i in range(1, m):
-    dp[i][0] = i
-  for j in range(1, n):
-    dp[0][j] = j
-
-  # Fill the DP table
-  # for rareness-weight
-  w1,w2,w3 = -0.5, 0.75, 0.5
-    
-  for i in range(1, m):
-    for j in range(1, n):
-      # Standard costs
-      insertion_cost = dp[i-1][j] + dict_sub_matrix[seq1[i-1]][seq2[0]]  # (letter -> # )
-      deletion_cost = dp[i][j-1] +  dict_sub_matrix[seq1[0]][seq2[j-1]]  # ( # -> letter)
-      # Substitution cost
-      cost = dict_sub_matrix[seq1[i]][seq2[j]]
-      substitution_cost = dp[i-1][j-1] + cost
-      dp[i][j] = min(insertion_cost, deletion_cost, substitution_cost)
-      # Handle transpositions with date constraint
-      if ((i > 0) & (j > 0)):
-          for idx_seq1  in range(1, m, 1):
-              date_diff1 = abs((dates1[idx_seq1] - dates2[j]).days)
-              if (date_diff1 < max_transposition_date):
-                  sub_cost = dict_sub_matrix[seq1[idx_seq1]][seq2[j]] ## Vtns = Vmtc * w3  ([0,1]) w3 = 0.5
-                  cost = (w3*sub_cost if seq1[idx_seq1] == seq2[j] else sub_cost)
-                  transposition_cost = dp[i-1][j-1] + cost
-                  dp[i][j] = min(dp[i][j], transposition_cost)
-          for idx_seq2  in range(1, n, 1):
-              date_diff2 = abs((dates1[i] - dates2[idx_seq2]).days)
-              if (date_diff2 < max_transposition_date):
-                  sub_cost = dict_sub_matrix[seq1[i]][seq2[idx_seq2]] ## Vtns = Vmtc * w3  ([0,1]) w3 = 0.5
-                  cost = (w3*sub_cost if seq1[idx_seq1] == seq2[j] else sub_cost)                  
-                  transposition_cost = dp[i-1][j-1] + cost
-                  dp[i][j] = min(dp[i][j], transposition_cost)
-
-  return dp[m - 1][n - 1], dp
-
 def Levenshtein_Distance_with_Transposition_Date_Final(seq1, seq2, dates1, dates2, dict_sub_matrix, max_transposition_date):
     """
     Calculates the Levenshtein distance between two sequences, considering transpositions.
@@ -99,7 +41,7 @@ def Levenshtein_Distance_with_Transposition_Date_Final(seq1, seq2, dates1, dates
             insertion_cost = dp[i][j-1] + w1*w2*min(Vmtc_row, Vmtc_col)  # ( # -> letter)
             deletion_cost = dp[i-1][j] + w1*w2*min(Vmtc_row, Vmtc_col)  # (letter -> # )
             # Substitution cost
-            min_dp =  dp[i-1][j-1] #min(dp[i][j-1], dp[i-1][j-1], dp[i-1][j])
+            min_dp = min(dp[i][j-1], dp[i-1][j-1], dp[i-1][j])
             if (seq1[i] != seq2[j]):
                 sub_cost = min_dp + w1*min(Vmtc_row, Vmtc_col) # sub
             if (seq1[i] == seq2[j]): ## sub or tns or mtc
@@ -110,16 +52,18 @@ def Levenshtein_Distance_with_Transposition_Date_Final(seq1, seq2, dates1, dates
                     sub_cost = min_dp + min(Vmtc_row, Vmtc_col)
                     if(i!=j):## tns
                         sub_cost = min_dp + w3*min(Vmtc_row, Vmtc_col)
-            dp[i][j] = min(insertion_cost, deletion_cost, sub_cost)
+            dp[i][j] = round(min(insertion_cost, deletion_cost, sub_cost), 2)
     return dp[sizerow - 1][sizecol - 1], dp
 
 def Levenshtein_Distance_with_Transposition_Date_Rareness(seq1, seq2, dates1, dates2, dict_pre_matrix, max_transposition_date):
     """
     Calculates the Levenshtein distance between two sequences, considering transpositions.
+    It is possible that distance > max_distance, if same events happen within trans date. (Vtns will be added.) 
     Args:
+    trans_date = 0 # means turn off transpose
     seq1: The first sequence.
     seq2: The second sequence.
-    dict_sub_matrix: Pandas DataFrame containing substitution distance.
+    dict_pre_matrix: dict that from rareness weighted rank
     Returns:
     The Levenshtein distance between the two sequences.
     """
@@ -142,22 +86,24 @@ def Levenshtein_Distance_with_Transposition_Date_Rareness(seq1, seq2, dates1, da
             # Standard costs
             Vmtc_row = dict_pre_matrix[seq1[i]]["Vmtc"]
             Vmtc_col = dict_pre_matrix[seq2[j]]["Vmtc"]
-            insertion_cost = dp[i][j-1] + w1*w2*min(Vmtc_row, Vmtc_col)  # ( # -> letter)
-            deletion_cost = dp[i-1][j] + w1*w2*min(Vmtc_row, Vmtc_col)  # (letter -> # )
+            Vins_row = w1*w2*Vmtc_row
+            Vins_col = w1*w2*Vmtc_col
+            insertion_cost = dp[i][j-1] + min(Vins_row, Vins_col) # ( # -> letter)
+            deletion_cost = dp[i-1][j] + min(Vins_row, Vins_col)  # (letter -> # )
             # Substitution cost
-            min_dp =  dp[i-1][j-1]
-            if (seq1[i] != seq2[j]):
-                sub_cost = min_dp + w1*min(Vmtc_row, Vmtc_col)  # sub
+            min_dp = min(dp[i][j-1], dp[i-1][j], dp[i-1][j-1]) #dp[i-1][j-1] #
+            if (seq1[i]!= seq2[j]):
+                sub_cost = min_dp + min(w1*Vmtc_row, w1*Vmtc_col)  # sub
             ## change sub_cost if same sequence
             if (seq1[i] == seq2[j]): ## sub or tns or mtc
-                if (abs((dates1[i] - dates2[j]).days) > max_transposition_date):
+                if (abs((dates1[i] - dates2[j]).days) >= max_transposition_date):
                     ## sub: same sequence, but out of date.
-                    sub_cost = min_dp + w1*min(Vmtc_row, Vmtc_col)
+                    sub_cost = min_dp + min(w1*Vmtc_row, w1*Vmtc_col)
                 else: ## within tns date,
                     sub_cost = min_dp + min(Vmtc_row, Vmtc_col)
                     if(i!=j):## tns
-                        sub_cost = min_dp + w3*min(Vmtc_row, Vmtc_col)
-            dp[i][j] = min(insertion_cost, deletion_cost, sub_cost)
+                        sub_cost = min_dp + min(w3*Vmtc_row, w3*Vmtc_col)
+            dp[i][j] = round(min(insertion_cost, deletion_cost, sub_cost), 1)
     return dp[sizerow - 1][sizecol - 1], dp
 
 def Normalize_Levenshtein_Distance_Score(seq1, seq2, dates1, dates2, dict_sub_matrix, max_transposition_date):
@@ -259,8 +205,6 @@ def main():
 
     filename = "test_output.txt"
     
-    #lock = multiprocessing.Lock()
-    #pool = multiprocessing.Pool(N_thread, initializer=initializer, initargs=(lock, filename))
     pool = multiprocessing.Pool(N_thread) 
     print ('Threads: '+ str(N_thread))
     

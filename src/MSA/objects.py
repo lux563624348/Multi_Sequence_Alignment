@@ -132,9 +132,9 @@ class SubstitutionMatrix:
         unique_index = sorted(list(set(seq1+seq2)))
         self.num_events = len(unique_index) + 2
         self.indexs = ["#"]+ unique_index + ["*"]  #
-        self.matrix = np.full((self.num_events, self.num_events), 0)
+        self.matrix = np.full((self.num_events, self.num_events), 0.0)
         ## score for set_scores(match, mismatch) 
-        self.iniate_scores(-1, 1)
+        self.iniate_scores(-1.0, 1.0)
         self.df_matrix = pd.DataFrame(data = self.matrix, index = self.indexs, columns = self.indexs)
     
     def set_score(self, event1, event2, score):
@@ -174,7 +174,7 @@ def Initate_Submatrix(seq1, seq2):
     SubMatrix.set_index(unique_index)
     ## score for set_scores(match, mismatch) 
     ## set_scores(0, 1) means Levenshtein Distance
-    SubMatrix.iniate_scores(0, 1)
+    SubMatrix.iniate_scores(0.0, 1.0)
     SubMatrix.to_df()
     return SubMatrix
 
