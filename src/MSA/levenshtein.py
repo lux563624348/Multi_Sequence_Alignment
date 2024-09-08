@@ -1,3 +1,6 @@
+## core components
+from src.MSA.__init__ import *
+## no dependency requirement
 ## Function for calculate distance & similarity
 
 def levenshtein_distance(seq1, seq2, dict_sub_matrix):
@@ -187,7 +190,7 @@ def Levenshtein_Distance_with_Transposition_Date_Final(seq1, seq2, dates1, dates
             insertion_cost = dp[i][j-1] + w1*w2*min(Vmtc_row, Vmtc_col)  # ( # -> letter)
             deletion_cost = dp[i-1][j] + w1*w2*min(Vmtc_row, Vmtc_col)  # (letter -> # )
             # Substitution cost
-            min_dp = min(dp[i][j-1], dp[i-1][j-1], dp[i-1][j])
+            min_dp = dp[i-1][j-1] #min(dp[i][j-1], dp[i-1][j-1], dp[i-1][j])
             if (seq1[i] != seq2[j]):
                 sub_cost = min_dp + w1*min(Vmtc_row, Vmtc_col) # sub
             if (seq1[i] == seq2[j]): ## sub or tns or mtc
@@ -201,7 +204,7 @@ def Levenshtein_Distance_with_Transposition_Date_Final(seq1, seq2, dates1, dates
             dp[i][j] = round(min(insertion_cost, deletion_cost, sub_cost), 2)
     return dp[sizerow - 1][sizecol - 1], dp
 
-def Levenshtein_Distance_with_Transposition_Date_Rareness(seq1, seq2, dates1, dates2, dict_pre_matrix, max_transposition_date):
+def Levenshtein_Distance_with_Transposition_Date_Rareness(seq1, seq2, dates1, dates2, dict_pre_matrix):
     """
     Calculates the Levenshtein distance between two sequences, considering transpositions.
     It is possible that distance > max_distance, if same events happen within trans date. (Vtns will be added.) 
@@ -237,7 +240,7 @@ def Levenshtein_Distance_with_Transposition_Date_Rareness(seq1, seq2, dates1, da
             insertion_cost = dp[i][j-1] + min(Vins_row, Vins_col) # ( # -> letter)
             deletion_cost = dp[i-1][j] + min(Vins_row, Vins_col)  # (letter -> # )
             # Substitution cost
-            min_dp = min(dp[i][j-1], dp[i-1][j], dp[i-1][j-1]) #dp[i-1][j-1] #
+            min_dp = dp[i-1][j-1] #min(dp[i][j-1], dp[i-1][j], dp[i-1][j-1]) #dp[i-1][j-1] #
             if (seq1[i]!= seq2[j]):
                 sub_cost = min_dp + min(w1*Vmtc_row, w1*Vmtc_col)  # sub
             ## change sub_cost if same sequence
@@ -270,9 +273,9 @@ def Normalize_Levenshtein_Distance_Score(seq1, seq2, dates1, dates2, dict_sub_ma
     similarity_score = 1 - normalized_score
     return similarity_score
 
-def Normalize_Levenshtein_Distance_Score_Rareness(seq1, seq2, dates1, dates2, dict_rare_matrix, max_transposition_date):
+def Normalize_Levenshtein_Distance_Score_Rareness(seq1, seq2, dates1, dates2, dict_rare_matrix):
     ''' 0~1'''
-    distance, matrix = Levenshtein_Distance_with_Transposition_Date_Rareness(seq1, seq2, dates1, dates2, dict_rare_matrix, max_transposition_date)
+    distance, matrix = Levenshtein_Distance_with_Transposition_Date_Rareness(seq1, seq2, dates1, dates2, dict_rare_matrix)
     #print ("Leven_Distance", distance)
 
     seq1_penal = [dict_rare_matrix[char]['Vins'] for char in seq1] #[dict_matrix[char]["#"] for char in seq1]

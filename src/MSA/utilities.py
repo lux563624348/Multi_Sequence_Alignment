@@ -1,3 +1,16 @@
+## utilities are the components require pandas, numpy and python included package
+
+import re
+import numpy as np
+import pandas as pd
+from datetime import datetime, date
+import time
+from src.MSA.levenshtein import *
+from src.MSA.__init__ import *
+
+def If_contain_letter(index_value):
+    return bool(re.search(r'[a-zA-Z]', index_value))
+
 def Return_Matrix_From_Multiprocessing_Output(_path_output):
     """
     Return_Matrix_From_Multiprocessing_Output
@@ -27,11 +40,6 @@ def Return_Matrix_From_Multiprocessing_Output(_path_output):
         #break
     return df_out_matrix.iloc[0:num_matrix, 0:num_matrix]
 
-import re
-
-def If_contain_letter(index_value):
-    return bool(re.search(r'[a-zA-Z]', index_value))
-
 def Negative_Log_Transform_and_Scale(values, scale_min=2, scale_max=20):
     """
     ## edit values scaled between 1 and 10 by rareness weighting
@@ -57,3 +65,36 @@ def Return_Rareness_Weighted_Matrix(_df, w1=-0.5, w2=0.75, w3=0.5):
     _df.loc[:, "Vtns"] = w3 * _df.loc[:, "Vmtc"]
     _df.loc["#", :] = 0
     return round(_df,1)#.astype(int)
+
+def Main_Compute_Similarity_For_Pair_and_Save(filename, pair_name, df_p1, df_p2, dict_sub_matrix):
+    df_seq1 = df_p1.sort_values(col_time)
+    df_seq2 = df_p2.sort_values(col_time)
+
+    seq1 = [x for x in df_seq1.loc[:, col_seq]]
+    seq2 = [x for x in df_seq2.loc[:, col_seq]]
+
+    date_format = "%Y-%m-%d"
+    date1 = [datetime.strptime(x, date_format).date() for x in df_seq1.loc[:, col_time].values]
+    date2 = [datetime.strptime(x, date_format).date() for x in df_seq2.loc[:, col_time].values]
+
+    ## work with rare rank directly
+    dict_rare_matrix = dict_sub_matrix 
+    similarity = Normalize_Levenshtein_Distance_Score_Rareness(seq1, seq2, date1, date2, dict_rare_matrix)
+
+    with open(filename, 'a') as f:
+        f.write(pair_name+'\t'+ str(round(similarity, 3))+'\n')
+        time.sleep(0.001)
+    
+    return similarity
+
+def Main_Compute_Similarity_For_Pair(pair_name, df_p1, df_p2, dict_sub_matrix):
+    df_seq1 = df_p1.sort_values(col_time)
+    df_seq2 = df_p2.sort_values(col_time)
+
+    seq1 = ''.join(df_seq1.loc[:, col_seq])
+    seq2 = ''.join(df_seq2.loc[:, col_seq])
+    date1 = df_seq1.loc[:, col_time].values
+    date2 = df_seq2.loc[:, col_time].values
+
+    similarity = Normalize_Levenshtein_Distance_Score_Rareness(seq1, seq2, date1, date2, dict_sub_matrix)
+    return similarity

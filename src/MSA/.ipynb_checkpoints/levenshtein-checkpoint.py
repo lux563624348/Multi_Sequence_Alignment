@@ -1,3 +1,6 @@
+## core components 
+## no dependency requirement
+
 ## Function for calculate distance & similarity
 
 def levenshtein_distance(seq1, seq2, dict_sub_matrix):
@@ -187,7 +190,7 @@ def Levenshtein_Distance_with_Transposition_Date_Final(seq1, seq2, dates1, dates
             insertion_cost = dp[i][j-1] + w1*w2*min(Vmtc_row, Vmtc_col)  # ( # -> letter)
             deletion_cost = dp[i-1][j] + w1*w2*min(Vmtc_row, Vmtc_col)  # (letter -> # )
             # Substitution cost
-            min_dp = min(dp[i][j-1], dp[i-1][j-1], dp[i-1][j])
+            min_dp = dp[i-1][j-1] #min(dp[i][j-1], dp[i-1][j-1], dp[i-1][j])
             if (seq1[i] != seq2[j]):
                 sub_cost = min_dp + w1*min(Vmtc_row, Vmtc_col) # sub
             if (seq1[i] == seq2[j]): ## sub or tns or mtc
@@ -237,7 +240,7 @@ def Levenshtein_Distance_with_Transposition_Date_Rareness(seq1, seq2, dates1, da
             insertion_cost = dp[i][j-1] + min(Vins_row, Vins_col) # ( # -> letter)
             deletion_cost = dp[i-1][j] + min(Vins_row, Vins_col)  # (letter -> # )
             # Substitution cost
-            min_dp = min(dp[i][j-1], dp[i-1][j], dp[i-1][j-1]) #dp[i-1][j-1] #
+            min_dp = dp[i-1][j-1] #min(dp[i][j-1], dp[i-1][j], dp[i-1][j-1]) #dp[i-1][j-1] #
             if (seq1[i]!= seq2[j]):
                 sub_cost = min_dp + min(w1*Vmtc_row, w1*Vmtc_col)  # sub
             ## change sub_cost if same sequence
