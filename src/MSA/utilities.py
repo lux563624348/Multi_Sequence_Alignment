@@ -4,9 +4,21 @@ import re
 import numpy as np
 import pandas as pd
 from datetime import datetime, date
-import time
+
 from src.MSA.levenshtein import *
 from src.MSA.__init__ import *
+
+
+def Get_Sequence_Dates_From_pID(_pid, df_groups, _len = -1):
+    """
+    ##
+    """
+    df_seq1 = df_groups.get_group(_pid).loc[:, [col_seq, col_time]].sort_values(col_time).drop_duplicates()
+    if (_len != -1):
+        df_seq1 = df_seq1.iloc[0:_len, :]
+    seq1 = [x for x in df_seq1.loc[:, col_seq]]
+    date1 = [x for x in df_seq1.loc[:, col_time]]
+    return df_seq1, seq1, date1
 
 def If_contain_letter(index_value):
     return bool(re.search(r'[a-zA-Z]', index_value))

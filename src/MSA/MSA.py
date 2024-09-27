@@ -205,16 +205,41 @@ def main():
 
     filename = "test_output.txt"
     
-    pool = multiprocessing.Pool(N_thread) 
+    ## to use only a limited RAM
+    pool = multiprocessing.Pool(N_thread)
+    task_per_second = 1000
+    Max_tasks = N_thread*task_per_second # For exmple, each task ~10MB, this is 1000 = 10GB
     print ('Threads: '+ str(N_thread))
     
+    ## full matrix
+    task_count = 0
     for idx in range(len(IDs)):
         print ("Process ID: ", idx)
+        df_p1 = df_groups.get_group(IDs[idx]).loc[:, [col_time, col_seq]]
         for idj in range(idx):
-            df_p1 = df_groups.get_group(IDs[idx]).loc[:, [col_time, col_seq]]
             df_p2 = df_groups.get_group(IDs[idj]).loc[:, [col_time, col_seq]]
             pair_name = IDs[idx] + "_" + IDs[idj]
             pool.apply_async(Main_Compute_Similarity_For_Pair_and_Save, args=(filename, pair_name, df_p1, df_p2, col_seq, col_time, dict_matrix, max_transposition_date))
+            task_count += 1
+            if (task_count % Max_tasks == 0):
+                print(f"Summited {task_count} tasks, pausing for a few seconds...")
+                time.sleep(Max_tasks/task_per_second + 1) # pause for N of thread seconds.
+    
+    ## vs given Centroid
+    centroid_ids = ['P01']
+    for idx in range(len(IDs)):
+        break
+        print("Process ID: ", idx, IDs[idx])
+        df_p1 = df_groups.get_group(IDs[idx]).loc[:, [col_time, col_seq]]
+        for cid in centroid_ids:
+            cid = int(cid)
+            df_p2 = df_groups.get_group(cid).loc[:, [col_time, col_seq]]
+            pair_name = IDs[idx] + "_" + str(cid)
+            pool.apply_async(Main_Compute_Similarity_For_Pair_and_Save, args=(filename, pair_name, df_p1, df_p2, col_seq, col_time, dict_matrix, max_transposition_date))
+            task_count += 1
+            if (task_count % Max_tasks == 0):
+                print(f"Summited {task_count} tasks, pausing for a few seconds...")
+                time.sleep(Max_tasks/task_per_second + 1) # pause for N of thread seconds.
 
     pool.close()
     pool.join()

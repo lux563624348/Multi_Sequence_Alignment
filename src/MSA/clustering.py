@@ -1,10 +1,7 @@
 ## components for Clustering Algorithm
-## require pandas
-import pandas as pd
+from src.MSA.__init__ import *
 from src.MSA.levenshtein import *
 from src.MSA.utilities import *
-from src.MSA.__init__ import *
-
 
 def Initate_Dict_For_Cluster(_centroid_ids):
     """
@@ -66,21 +63,10 @@ def Find_Key_For_Value(data, target_value):
     return None  # Return None if the target_value is not found
 
 def Find_Max_From_Dict(_dict):
-    # Find the key with the maximum value
+    """# Find the key with the maximum value"""
     max_key = max(_dict, key=_dict.get)
     max_value = _dict[max_key]
     return max_key, max_value
-
-def Get_Sequence_Dates_From_pID(_pid, df_groups, _len = -1):
-    """
-    ##
-    """
-    df_seq1 = df_groups.get_group(_pid).loc[:, [col_seq, col_time]].sort_values(col_time).drop_duplicates()
-    if (_len != -1):
-        df_seq1 = df_seq1.iloc[0:_len, :]
-    seq1 = [x for x in df_seq1.loc[:, col_seq]]
-    date1 = [x for x in df_seq1.loc[:, col_time]]
-    return df_seq1, seq1, date1
 
 def Assign_Cluster_On_Max_Similarity(_filename, _dict_cluster_meta, IDs, centroid_ids, df_groups, dict_rareness_matrix):
     """
@@ -133,8 +119,6 @@ def Calculate_Pairwise_Similarity_For_A_Cluster(_filename, _ids, _df_groups, _di
                 list_similarity.append([name_pair, similarity])
     return list_similarity
 
-
-
 def Return_Centroid_Patient_For_Kmean_Cluster(_cluster, _df_out):
     return _df_out[_df_out.k_means_cluster == _cluster].patient_id_C.values[0]
 
@@ -148,6 +132,9 @@ def Return_Substr_Match(_substr, _df):
     rows_with_substring = _df[mask.any(axis=1)]
     return rows_with_substring
 
+
+""" This is conflict with  Calculate_Pairwise_Similarity_For_A_Cluster()
+import pandas as pd
 def Return_Pair_Similarity_Within_A_Cluster(_cluster, _df_out, _df_out_meta, _path_all_pair):
     df_out = _df_out
     pID_C = Return_Centroid_Patient_For_Kmean_Cluster(_cluster, df_out)
@@ -161,5 +148,5 @@ def Return_Pair_Similarity_Within_A_Cluster(_cluster, _df_out, _df_out_meta, _pa
         df_centroid_similarity = pd.concat([df_centroid_similarity, Return_Substr_Match(pID, df_substr_similarity)], ignore_index = True)
         #break
     return df_centroid_similarity
-
+"""
 
